@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>資產存摺 · 提領試算</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Space+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+  :root{
+    --ink: #1c2b24;
+    --paper: #f2ede1;
+    --paper-line: #d9cfb8;
+    --seal: #a13b2c;
+    --seal-dim: #a13b2c33;
+    --gold: #9c7a2e;
+    --green: #2f5d4a;
+    --green-dim: #2f5d4a22;
+    --muted: #6b6255;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: #0f1712;
+    color: var(--ink);
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+
+  .wrap{
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 28px 16px 60px;
+  }
+
+  /* Passbook cover header */
+  .cover{
+    background: linear-gradient(180deg, #16241d, #0f1712);
+    color: var(--paper);
+    border-radius: 10px 10px 0 0;
+    padding: 28px 26px 22px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #2a3b30;
+    border-bottom: none;
+  }
+  .cover::before{
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 18px);
+    pointer-events: none;
+  }
+  .cover .eyebrow{
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #b7a86a;
+    margin: 0 0 10px;
+  }
+  .cover h1{
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 700;
+    font-size: 30px;
+    margin: 0 0 6px;
+    letter-spacing: 0.04em;
+  }
+  .cover p.sub{
+    margin: 0;
+    font-size: 13px;
+    color: #9fb0a4;
+    line-height: 1.7;
+  }
+  .seal{
+    position: absolute;
+    top: 22px; right: 24px;
+    width: 58px; height: 58px;
+    border: 2px solid var(--seal);
+    border-radius: 6px;
+    color: var(--seal);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.3;
+    text-align: center;
+    transform: rotate(-6deg);
+    opacity: 0.85;
+    writing-mode: vertical-rl;
+  }
+
+  /* Body = passbook pages */
+  .pages{
+    background: var(--paper);
+    border: 1px solid #d9cfb8;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 24px 22px 8px;
+  }
+
+  .field-row{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+    margin-bottom: 6px;
+  }
+  .field{
+    border-bottom: 1px dashed var(--paper-line);
+    padding-bottom: 10px;
+  }
+  .field label{
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .field .input-line{
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .field input{
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: 'Space Mono', monospace;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ink);
+    padding: 2px 0;
+  }
+  .field input:focus{ outline: none; }
+  .field .unit{
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .mode-toggle{
+    display: flex;
+    gap: 8px;
+    margin: 18px 0 6px;
+  }
+  .mode-toggle button{
+    flex: 1;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 9px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--paper-line);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .mode-toggle button.active{
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--paper);
+  }
+
+  .hint{
+    font-size: 11.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 4px 0 18px;
+  }
+
+  /* Summary stamps */
+  .stamps{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 20px 0 22px;
+  }
+  .stamp{
+    border: 1px solid var(--paper-line);
+    border-radius: 8px;
+    padding: 13px 10px;
+    text-align: center;
+    background: #ffffffa8;
+  }
+  .stamp .k{
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .stamp .v{
+    font-family: 'Space Mono', monospace;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--green);
+  }
+  .stamp.final .v{ color: var(--seal); font-size: 18px; }
+
+  /* Ledger table */
+  .ledger-title{
+    font-family: 'Noto Serif TC', serif;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 6px 0 10px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ledger-title::after{
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--paper-line);
+  }
+
+  .table-scroll{
+    max-height: 380px;
+    overflow-y: auto;
+    border: 1px solid var(--paper-line);
+    border-radius: 8px;
+    margin-bottom: 22px;
+  }
+  table{
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+  }
+  thead th{
+    position: sticky; top: 0;
+    background: #e9e1cd;
+    color: var(--ink);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    text-align: right;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--paper-line);
+  }
+  thead th:first-child{ text-align: left; }
+  tbody td{
+    text-align: right;
+    padding: 6px 10px;
+    border-bottom: 1px solid #e4dcc7;
+    white-space: nowrap;
+  }
+  tbody td:first-child{ text-align: left; color: var(--muted); font-family: 'Noto Sans TC', sans-serif; }
+  tbody tr.phase-start td{ border-top: 1px dashed var(--seal-dim); }
+  tbody tr:hover{ background: var(--green-dim); }
+  tbody tr.milestone{ background: #f4ecd8; font-weight: 700; }
+  .withdraw-col{ color: var(--seal); }
+
+  .foot-note{
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+    padding: 4px 2px 20px;
+  }
+  .foot-note b{ color: var(--ink); }
+
+  @media (max-width: 480px){
+    .cover h1{ font-size: 24px; }
+    .stamps{ grid-template-columns: 1fr 1fr; }
+    .stamps .stamp:last-child{ grid-column: span 2; }
+    table{ font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="cover">
+    <div class="seal">試算専用</div>
+    <p class="eyebrow">Asset Passbook · 資產存摺</p>
+    <h1>提領試算帳</h1>
+    <p class="sub">輸入起始資產與假設報酬率，檢視提領期間資產與可提領金額的逐年變化。</p>
+  </div>
+
+  <div class="pages">
+
+    <div class="field-row">
+      <div class="field">
+        <label>起始資產（萬）</label>
+        <div class="input-line">
+          <input type="number" id="principal" value="3000" inputmode="decimal">
+          <span class="unit">萬元</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>年化報酬率</label>
+        <div class="input-line">
+          <input type="number" id="returnRate" value="9" step="0.5" inputmode="decimal">
+          <span class="unit">%</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>起始年齡</label>
+        <div class="input-line">
+          <input type="number" id="startAge" value="43" inputmode="numeric">
+          <span class="unit">歲</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>開始提領年齡</label>
+        <div class="input-line">
+          <input type="number" id="withdrawAge" value="55" inputmode="numeric">
+          <span class="unit">歲</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>提領比例</label>
+        <div class="input-line">
+          <input type="number" id="withdrawRate" value="4" step="0.5" inputmode="decimal">
+          <span class="unit">% / 年</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>試算至年齡</label>
+        <div class="input-line">
+          <input type="number" id="endAge" value="85" inputmode="numeric">
+          <span class="unit">歲</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mode-toggle">
+      <button id="modePercent" class="active">提領當年資產 %（浮動金額）</button>
+      <button id="modeFixed">固定金額（依開始提領當年%換算）</button>
+    </div>
+    <p class="hint" id="modeHint">提領金額 = 當年資產 × 提領比例，資產與提領金額會隨報酬率持續成長或增減。</p>
+
+    <div class="stamps">
+      <div class="stamp">
+        <div class="k">開始提領時資產</div>
+        <div class="v" id="stampWithdrawStart">—</div>
+      </div>
+      <div class="stamp">
+        <div class="k">首年提領金額</div>
+        <div class="v" id="stampFirstWithdraw">—</div>
+      </div>
+      <div class="stamp final">
+        <div class="k">最終年資產</div>
+        <div class="v" id="stampFinal">—</div>
+      </div>
+    </div>
+
+    <div class="ledger-title">逐年明細</div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>年齡</th>
+            <th>期初資產（萬）</th>
+            <th>提領金額（萬）</th>
+            <th>期末資產（萬）</th>
+          </tr>
+        </thead>
+        <tbody id="ledgerBody"></tbody>
+      </table>
+    </div>
+
+    <p class="foot-note">
+      <b>試算假設：</b>報酬率為固定年化值，實際市場報酬每年會有波動；提領後資產以「報酬率」持續複利成長；未考慮通膨、稅負與費用。開始提領當年之前不提領、不再投入新資金。此為簡化試算，僅供參考，不構成投資或財務建議。
+    </p>
+
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const principalEl = $('principal'), returnEl = $('returnRate'), startAgeEl = $('startAge'),
+        withdrawAgeEl = $('withdrawAge'), withdrawRateEl = $('withdrawRate'), endAgeEl = $('endAge');
+  const modePercentBtn = $('modePercent'), modeFixedBtn = $('modeFixed'), modeHint = $('modeHint');
+  let mode = 'percent';
+
+  function fmt(n){
+    if (!isFinite(n)) return '—';
+    return n.toLocaleString('zh-TW', { maximumFractionDigits: 1 });
+  }
+
+  function compute(){
+    const principal = parseFloat(principalEl.value) || 0;
+    const r = (parseFloat(returnEl.value) || 0) / 100;
+    const startAge = parseInt(startAgeEl.value) || 0;
+    const withdrawAge = parseInt(withdrawAgeEl.value) || 0;
+    const wRate = (parseFloat(withdrawRateEl.value) || 0) / 100;
+    const endAge = parseInt(endAgeEl.value) || 0;
+
+    const rows = [];
+    let asset = principal;
+    let fixedAmount = null;
+
+    for (let age = startAge; age <= endAge; age++){
+      const beginAsset = asset;
+      let withdraw = 0;
+      const isWithdrawPhase = age >= withdrawAge;
+
+      if (isWithdrawPhase){
+        if (mode === 'percent'){
+          withdraw = beginAsset * wRate;
+        } else {
+          if (fixedAmount === null) fixedAmount = beginAsset * wRate;
+          withdraw = fixedAmount;
+        }
+      }
+
+      const afterWithdraw = beginAsset - withdraw;
+      const endAsset = afterWithdraw * (1 + r);
+
+      rows.push({
+        age, beginAsset, withdraw, endAsset,
+        isPhaseStart: age === withdrawAge,
+        isMilestone: (age === withdrawAge) || (age === endAge) || (age % 10 === 0)
+      });
+
+      asset = endAsset;
+    }
+
+    return rows;
+  }
+
+  function render(){
+    const rows = compute();
+    const tbody = $('ledgerBody');
+    tbody.innerHTML = '';
+
+    rows.forEach(row => {
+      const tr = document.createElement('tr');
+      if (row.isPhaseStart) tr.classList.add('phase-start');
+      if (row.isMilestone) tr.classList.add('milestone');
+      tr.innerHTML = `
+        <td>${row.age} 歲</td>
+        <td>${fmt(row.beginAsset)}</td>
+        <td class="withdraw-col">${row.withdraw > 0 ? fmt(row.withdraw) : '—'}</td>
+        <td>${fmt(row.endAsset)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const withdrawAge = parseInt(withdrawAgeEl.value) || 0;
+    const withdrawRow = rows.find(r => r.age === withdrawAge);
+    const lastRow = rows[rows.length - 1];
+
+    $('stampWithdrawStart').textContent = withdrawRow ? fmt(withdrawRow.beginAsset) + ' 萬' : '—';
+    $('stampFirstWithdraw').textContent = withdrawRow ? fmt(withdrawRow.withdraw) + ' 萬' : '—';
+    $('stampFinal').textContent = lastRow ? fmt(lastRow.endAsset) + ' 萬' : '—';
+  }
+
+  [principalEl, returnEl, startAgeEl, withdrawAgeEl, withdrawRateEl, endAgeEl].forEach(el => {
+    el.addEventListener('input', render);
+  });
+
+  modePercentBtn.addEventListener('click', () => {
+    mode = 'percent';
+    modePercentBtn.classList.add('active');
+    modeFixedBtn.classList.remove('active');
+    modeHint.textContent = '提領金額 = 當年資產 × 提領比例，資產與提領金額會隨報酬率持續成長或增減。';
+    render();
+  });
+  modeFixedBtn.addEventListener('click', () => {
+    mode = 'fixed';
+    modeFixedBtn.classList.add('active');
+    modePercentBtn.classList.remove('active');
+    modeHint.textContent = '提領金額於開始提領當年依比例算出後固定，之後每年提領同一金額（未隨通膨調整）。';
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
